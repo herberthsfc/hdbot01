@@ -8,6 +8,7 @@ const {
 const { color, bgcolor } = require('./lib/color')
 const { help } = require('./src/help')
 const { menu } = require('./lib/menu')
+const { nad } = require('./language')
 const { wait, simih, getBuffer, h2k, generateMessageID, getGroupAdmins, getRandom, banner, start, info, success, close } = require('./lib/functions')
 const { fetchJson, fetchText } = require('./lib/fetcher')
 const { recognize } = require('./lib/ocr')
@@ -26,7 +27,7 @@ const samih = JSON.parse(fs.readFileSync('./src/simi.json'))
 const ban = JSON.parse(fs.readFileSync('./database/user/banned.json'))
 const premium = JSON.parse(fs.readFileSync('./database/user/premium.json'))
 const antilink = JSON.parse(fs.readFileSync('./database/json/antilink.json'))
-prefix = '.'
+prefix = '/'
 blocked = []
 
 function kyun(seconds){
@@ -354,6 +355,22 @@ async function starts() {
 					teks += `│ Número de Usuarios Premium: ${premium.length}\n╰──────「 *HDBOT* 」`
 					client.sendMessage(from, teks.trim(), extendedText, {quoted: mek, contextInfo: {"mentionedJid": premium}})
 					break
+				case 'musica':
+                if (!isPrem) return reply(nad.premium())
+                if(body.length < 6) return client.reply(from, 'Você precisa dizer a música', mek)
+                res = (await fetchJson(`https://arugaytdl.herokuapp.com/search?q=${body.slice(6)}`, {method: 'get'}))[0]
+                asize = await fetchJson(`https://st4rz.herokuapp.com/api/yta?url=https://youtu.be/${res.id}`, {method: 'get'})
+                if(asize.filesize.replace(' MB', '')>=16||asize.filesize.endsWith('GB')){
+                client.reply(from, `O limite de tamanho é 16 MB. Esse áudio possui ${asize.filesize}`, mek)
+                }
+                else{
+                thumb = await getBuffer(res.thumbnail)
+                client.sendMessage(from, thumb, image, {quoted: mek, caption: '❬🎵❭ Baixando Musica...'})
+                rest = await fetchJson(`http://st4rz.herokuapp.com/api/yta2?url=http://youtu.be/${res.id}`, {method: 'get'})
+                buffer = await getBuffer(rest.result)
+                client.sendMessage(from, buffer, audio, {mimetype: 'audio/mp4', quoted: mek, ptt: true})
+                }
+                break
 				case 'nazista':
                     client.updatePresence(from, Presence.composing) 
                     var number = Math.floor(Math.random() * 101)
