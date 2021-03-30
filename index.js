@@ -24,6 +24,8 @@ const welkom = JSON.parse(fs.readFileSync('./src/welkom.json'))
 const nsfw = JSON.parse(fs.readFileSync('./src/nsfw.json'))
 const samih = JSON.parse(fs.readFileSync('./src/simi.json'))
 const ban = JSON.parse(fs.readFileSync('./database/user/banned.json'))
+const premium = JSON.parse(fs.readFileSync('./database/user/premium.json'))
+const antilink = JSON.parse(fs.readFileSync('./database/json/antilink.json'))
 prefix = '.'
 blocked = []
 
@@ -113,22 +115,24 @@ async function starts() {
 			body = (type === 'conversation' && mek.message.conversation.startsWith(prefix)) ? mek.message.conversation : (type == 'imageMessage') && mek.message.imageMessage.caption.startsWith(prefix) ? mek.message.imageMessage.caption : (type == 'videoMessage') && mek.message.videoMessage.caption.startsWith(prefix) ? mek.message.videoMessage.caption : (type == 'extendedTextMessage') && mek.message.extendedTextMessage.text.startsWith(prefix) ? mek.message.extendedTextMessage.text : ''
 			budy = (type === 'conversation') ? mek.message.conversation : (type === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : ''
 			const command = body.slice(1).trim().split(/ +/).shift().toLowerCase()
+			var pes = (type === 'conversation' && mek.message.conversation) ? mek.message.conversation : (type == 'imageMessage') && mek.message.imageMessage.caption ? mek.message.imageMessage.caption : (type == 'videoMessage') && mek.message.videoMessage.caption ? mek.message.videoMessage.caption : (type == 'extendedTextMessage') && mek.message.extendedTextMessage.text ? mek.message.extendedTextMessage.text : ''
+			const messagesC = pes.slice(0).trim().split(/ +/).shift().toLowerCase()
 			const args = body.trim().split(/ +/).slice(1)
 			const isCmd = body.startsWith(prefix)
 
 			mess = {
-				wait: '⌛ Sedang di Prosess ⌛',
-				success: '✔️ Berhasil ✔️',
+				wait: '*❬⏳️❭ Carregando, aguarde...*',
+				success: 'Sucesso ✔️',
 				error: {
-					stick: '❌ Gagal, terjadi kesalahan saat mengkonversi gambar ke sticker ❌',
-					Iv: '❌ Link tidak valid ❌'
+					stick: '*❬❗️❭ Aconteceu um erro, tente novamente!*',
+					Iv: '*❬❗️❭ Link inválido*'
 				},
 				only: {
-					group: '❌ Perintah ini hanya bisa di gunakan dalam group! ❌',
-					ownerG: '❌ Perintah ini hanya bisa di gunakan oleh owner group! ❌',
-					ownerB: '❌ Perintah ini hanya bisa di gunakan oleh owner bot! ❌',
-					admin: '❌ Perintah ini hanya bisa di gunakan oleh admin group! ❌',
-					Badmin: '❌ Perintah ini hanya bisa di gunakan ketika bot menjadi admin! ❌'
+					group: '*❬❗️❭ Comando disponível apenas em grupos!*',
+					ownerG: '*❬❗️️❭ Comando disponível apenas para os proprietários do bot!*',
+					ownerB: '*❬❗️️❭ Comando disponível apenas para os proprietários do bot!*',
+					admin: '*❬👮❭ Comando disponível apenas para os administradores do grupo, seu membro comum! 🖕*',
+					Badmin: '*❬❗️️❭ O bot precisa de adm para cumprir suas funções!*'
 				}
 			}
 
@@ -148,6 +152,8 @@ async function starts() {
 			const isSimi = isGroup ? samih.includes(from) : false
 			const isOwner = ownerNumber.includes(sender)
 			const isBanned = ban.includes(sender)
+			const isPrem = premium.includes(sender)
+			const isAntiLink = isGroup ? antilink.includes(from) : false
 			pushname = client.contacts[sender] != undefined ? client.contacts[sender].vname || client.contacts[sender].notify : undefined
 			const isUrl = (url) => {
 			    return url.match(new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/, 'gi'))
@@ -161,7 +167,61 @@ async function starts() {
 			const mentions = (teks, memberr, id) => {
 				(id == null || id == undefined || id == false) ? client.sendMessage(from, teks.trim(), extendedText, {contextInfo: {"mentionedJid": memberr}}) : client.sendMessage(from, teks.trim(), extendedText, {quoted: mek, contextInfo: {"mentionedJid": memberr}})
 			}
+            const addATM = (sender) => {
+                const obj = {id: sender, uang : 0}
+            uang.push(obj)
+            fs.writeFileSync('./database/json/uang.json', JSON.stringify(uang))
+            }
 
+        const addKoinUser = (sender, amount) => {
+            let position = false
+            Object.keys(uang).forEach((i) => {
+                if (uang[i].id === sender) {
+                    position = i
+                }
+            })
+            if (position !== false) {
+                uang[position].uang += amount
+                fs.writeFileSync('./database/json/uang.json', JSON.stringify(uang))
+            }
+        }
+
+        const checkATMuser = (sender) => {
+                let position = false
+            Object.keys(uang).forEach((i) => {
+                if (uang[i].id === sender) {
+                    position = i
+                }
+            })
+            if (position !== false) {
+                return uang[position].uang
+            }
+        }
+
+        const confirmATM = (sender, amount) => {
+                let position = false
+            Object.keys(uang).forEach((i) => {
+                if (uang[i].id === sender) {
+                    position = i
+                }
+            })
+            if (position !== false) {
+                uang[position].uang -= amount
+                fs.writeFileSync('./database/json/uang.json', JSON.stringify(uang))
+            }
+        }
+        if (messagesC.includes("://chat.whatsapp.com/")){
+		if (!isGroup) return
+		if (!isAntiLink) return
+		if (isGroupAdmins) return reply('*Por você ser adm do grupo, não vou te remover dessa vez, ok?!*')
+		client.updatePresence(from, Presence.composing)
+		if (messagesC.includes("#izinadmin")) return reply("#izinadmin diterima")
+		var kic = `${sender.split("@")[0]}@s.whatsapp.net`
+		reply(`*⊘ | LINK DETECTADO!* \n*Número:* ${sender.split("@")[0]} \n*Ação:* removido(a) com sucesso!`)
+		setTimeout( () => {
+			client.groupRemove(from, [kic]).catch((e)=>{reply(`*ERR:* ${e}`)})
+		}, 1000)
+	}
 			colors = ['red','white','black','blue','yellow','green']
 			const isMedia = (type === 'imageMessage' || type === 'videoMessage')
 			const isQuotedImage = type === 'extendedTextMessage' && content.includes('imageMessage')
@@ -245,6 +305,54 @@ async function starts() {
 					teks = `*Nama bot* : ${me.name}\n*Nomor Bot* : @${me.jid.split('@')[0]}\n*Prefix* : ${prefix}\n*Total Block Contact* : ${blocked.length}\n*The bot is active on* : ${kyun(uptime)}`
 					buffer = await getBuffer(me.imgUrl)
 					client.sendMessage(from, buffer, image, {caption: teks, contextInfo:{mentionedJid: [me.jid]}})
+					break
+				case 'antilink':
+                    if (!isGroup) return reply(mess.only.group)
+					if (!isGroupAdmins) return reply(mess.only.admin)
+					if (!isBotGroupAdmins) return reply(mess.only.Badmin)
+					if (args.length < 1) return reply('*Digite 1 para ativar*')
+					if (Number(args[0]) === 1) {
+						if (isAntiLink) return reply('*✓ | O Antilink ja está ativado!*')
+						antilink.push(from)
+						fs.writeFileSync('./src/antilink.json', JSON.stringify(antilink))
+						reply('\`\`\`✓Ativado com sucesso o modo antilink neste grupo!\`\`\`')
+					} else if (Number(args[0]) === 0) {
+						if (!isantilink) return reply('*⊘ | Antilink desativado com sucesso!*')
+						var ini = anti.indexOf(from)
+						antilink.splice(ini, 1)
+						fs.writeFileSync('./src/antilink.json', JSON.stringify(antilink))
+						reply('\`\`\`⊘Modo antilink desativado com sucesso neste grupo!\`\`\`️')
+					} else {
+						reply('*1 para ativar, 0 para desativar!*')
+					}
+					break
+				case 'addprem':
+					if (!isOwner) return reply(nad.ownerb())
+					addp = body.slice(10)
+					premium.push(`${addp}@s.whatsapp.net`)
+					fs.writeFileSync('./database/user/premium.json', JSON.stringify(premium))
+					reply(`Sucesso adicionado ${addp} ao Premium`)
+					break
+				case 'kickprem':
+					if (!isOwner) return reply(nad.ownerb())
+					oh = body.slice(11)
+					delp = premium.indexOf(oh)
+					premium.splice(delp, 1)
+					fs.writeFileSync('./database/user/premium.json', JSON.stringify(premium))
+					reply(`Excluido com sucesso ${oh} da Lista Premium`)
+					break
+					case 'listapremium':
+					case 'premiumlist':
+					if (isBanned) return reply(nad.baned())
+					client.updatePresence(from, Presence.composing) 
+					teks = `╭─「 *USUÁRIOS PREMIUM* 」\n`
+					no = 0
+					for (let prem of premium) {
+						no += 1
+						teks += `│「${no.toString()}」 @${prem.split('@')[0]}\n`
+					}
+					teks += `│ Número de Usuarios Premium: ${premium.length}\n╰──────「 *HDBOT* 」`
+					client.sendMessage(from, teks.trim(), extendedText, {quoted: mek, contextInfo: {"mentionedJid": premium}})
 					break
 				case 'nazista':
                     client.updatePresence(from, Presence.composing) 
